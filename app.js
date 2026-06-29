@@ -339,6 +339,66 @@ function chooseRecordingType() {
   return candidates.find((type) => MediaRecorder.isTypeSupported(type)) || "";
 }
 
+async function recordExport(canvas, context, videoBitrate, audioBitrate, attempt, exportStatus) {
+  const canvasStream = canvas.captureStream(30);
+  const videoStream = typeof video.captureStream === "function" ? video.captureStream() : null;
+  const combinedStream = new MediaStream([
+    ...canvasStream.getVideoTracks(),
+    ...(videoStream ? videoStream.getAudioTracks() : []),
+  ]);
+  const mimeType = chooseRecordingType();
+  const recorder = new MediaRecorder(combinedStream, {
+    mimeType,
+    videoBitsPerSecond: videoBitrate,
+    audioBitsPerSecond: audioBitrate,
+  });
+  const chunks = [];
+  let animationFrame;
+
+  const draw = () => {
+    renderExportFrame(context, canvas);
+    const progress = Math.min(100, Math.round((video.currentTime / video.duration) * 100));
+    const prefix = attempt === 1 ? "Exporting" : `Compressing (pass ${attempt})`;
+    exportStatus.textContent = `${prefix} ${progress}%`;
+    animationFrame = requestAnimationFrame(draw);
+  };
+
+  recorder.addEventListener("dataavailable", (event) => {
+    if (event.data.size) chunks.push(event.data);
+  });
+
+  const completed = new Promise((resolve, reject) => {
+    recorder.addEventListener("stop", resolve, { once: true });
+    recorder.addEventListener("error", reject, { once: true });
+  });
+
+  video.pause();
+  if (video.currentTime !== 0) {
+    const seeked = new Promise((resolve) => video.addEventListener("seeked", resolve, { once: true }));
+    video.currentTime = 0;
+    await seeked;
+  }
+
+  renderExportFrame(context, canvas);
+  recorder.start(1000);
+  draw();
+
+  const ended = new Promise((resolve) => video.addEventListener("ended", resolve, { once: true }));
+  await video.play();
+  await ended;
+  cancelAnimationFrame(animationFrame);
+  renderExportFrame(context, canvas);
+  recorder.stop();
+  await completed;
+  combinedStream.getTracks().forEach((track) => track.stop());
+
+  const outputType = recorder.mimeType || mimeType || "video/webm";
+  return {
+    blob: new Blob(chunks, { type: outputType }),
+    outputType,
+  };
+}
+
 document.getElementById("exportButton").addEventListener("click", async () => {
   const exportButton = document.getElementById("exportButton");
   const exportStatus = document.getElementById("exportStatus");
@@ -357,73 +417,50 @@ document.getElementById("exportButton").addEventListener("click", async () => {
   canvas.width = 1920;
   canvas.height = 1080;
   const context = canvas.getContext("2d", { alpha: false });
-  const canvasStream = canvas.captureStream(30);
-  const videoStream = typeof video.captureStream === "function" ? video.captureStream() : null;
-  const combinedStream = new MediaStream([
-    ...canvasStream.getVideoTracks(),
-    ...(videoStream ? videoStream.getAudioTracks() : []),
-  ]);
-  const mimeType = chooseRecordingType();
-  const recorder = new MediaRecorder(combinedStream, {
-    mimeType,
-    videoBitsPerSecond: 8000000,
-    audioBitsPerSecond: 128000,
-  });
-  const chunks = [];
-  let animationFrame;
   const previousLoop = video.loop;
-
-  const draw = () => {
-    renderExportFrame(context, canvas);
-    const progress = Math.min(100, Math.round((video.currentTime / video.duration) * 100));
-    exportStatus.textContent = `Exporting ${progress}%`;
-    animationFrame = requestAnimationFrame(draw);
-  };
-
-  recorder.addEventListener("dataavailable", (event) => {
-    if (event.data.size) chunks.push(event.data);
-  });
-
-  const completed = new Promise((resolve, reject) => {
-    recorder.addEventListener("stop", resolve, { once: true });
-    recorder.addEventListener("error", reject, { once: true });
-  });
+  const maxBytes = 10000000;
+  const targetBytes = 9200000;
+  const totalBitrate = Math.floor((targetBytes * 8) / video.duration);
+  let audioBitrate = Math.max(32000, Math.min(96000, Math.floor(totalBitrate * 0.08)));
+  let videoBitrate = Math.max(80000, Math.min(8000000, totalBitrate - audioBitrate - 24000));
 
   try {
     await document.fonts.ready;
-    video.pause();
     video.loop = false;
-    if (video.currentTime !== 0) {
-      const seeked = new Promise((resolve) => video.addEventListener("seeked", resolve, { once: true }));
-      video.currentTime = 0;
-      await seeked;
+    let result;
+
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      result = await recordExport(
+        canvas,
+        context,
+        videoBitrate,
+        audioBitrate,
+        attempt,
+        exportStatus,
+      );
+      if (result.blob.size <= maxBytes) break;
+
+      const reduction = Math.min(0.9, (targetBytes / result.blob.size) * 0.88);
+      videoBitrate = Math.max(80000, Math.floor(videoBitrate * reduction));
+      audioBitrate = Math.max(32000, Math.min(audioBitrate, Math.floor(audioBitrate * reduction)));
+      exportStatus.textContent = `File is ${(result.blob.size / 1000000).toFixed(2)} MB. Recompressing...`;
+      await new Promise((resolve) => setTimeout(resolve, 500));
     }
 
-    renderExportFrame(context, canvas);
-    recorder.start(1000);
-    draw();
+    if (!result || result.blob.size > maxBytes) {
+      throw new Error("Could not reach the 10 MB limit after three passes.");
+    }
 
-    const ended = new Promise((resolve) => video.addEventListener("ended", resolve, { once: true }));
-    await video.play();
-    await ended;
-    cancelAnimationFrame(animationFrame);
-    renderExportFrame(context, canvas);
-    recorder.stop();
-    await completed;
-
-    const outputType = recorder.mimeType || mimeType || "video/webm";
+    const { blob, outputType } = result;
     const extension = outputType.startsWith("video/mp4") ? "mp4" : "webm";
-    const blob = new Blob(chunks, { type: outputType });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = `game-clips-${document.getElementById("segmentInput").value.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "export"}.${extension}`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 30000);
-    exportStatus.textContent = `Export complete: ${extension.toUpperCase()} with video and audio`;
+    exportStatus.textContent = `Export complete: ${(blob.size / 1000000).toFixed(2)} MB ${extension.toUpperCase()}`;
   } catch (error) {
     console.error(error);
-    if (recorder.state !== "inactive") recorder.stop();
-    cancelAnimationFrame(animationFrame);
     exportStatus.textContent = `Export failed: ${error.message}`;
   } finally {
     video.loop = previousLoop;

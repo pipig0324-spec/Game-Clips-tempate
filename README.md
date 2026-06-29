@@ -8,6 +8,7 @@ Configurable 16:9 announcement-video template for Game Clips.
 - Configurable typography, colors, and logo size
 - Draggable clip calibration with precise position and size controls
 - Local 1920x1080 WebM export with clip audio
+- Automatic bitrate optimization and recompression to keep exports under 10 MB
 - Browser-local configuration persistence
 
 All uploaded clips and avatars remain in the browser and are not sent to a server.
