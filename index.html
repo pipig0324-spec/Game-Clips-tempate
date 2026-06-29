@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Game Clips Winner Template</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="workspace">
+    <section class="preview-wrap">
+      <div class="stage" id="stage">
+        <img class="scene" src="assets/desktop-setup.png" alt="">
+        <div class="vignette"></div>
+
+        <header class="announcement">
+          <div class="brand-crop" aria-label="Razer">
+            <img src="assets/gameclips-logo.png" alt="Razer">
+          </div>
+          <p class="eyebrow" id="eyebrowOutput">FUNNIEST CLIP OF THE MONTH</p>
+          <h1 id="titleOutput">JUNE'S WINNER ANNOUNCEMENT</h1>
+          <p class="subtitle" id="subtitleOutput"></p>
+        </header>
+
+        <div class="screen">
+          <video id="clipVideo" playsinline loop controls></video>
+          <div class="screen-placeholder" id="screenPlaceholder">
+            <span>SELECT A CLIP</span>
+          </div>
+        </div>
+
+        <div class="winner">
+          <div class="avatar" id="avatarPreview"><span id="avatarInitial">W</span></div>
+          <div class="winner-copy">
+            <span class="winner-label" id="segmentOutput">WINNER</span>
+            <strong id="displayNameOutput">RenPT23 (7om)</strong>
+            <span class="discord-id" id="usernameOutput">@9om_2</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="controls">
+      <div class="controls-heading">
+        <div>
+          <span class="section-label">TEMPLATE</span>
+          <h2>Winner announcement</h2>
+        </div>
+        <button class="icon-button" id="hidePanel" title="Hide controls" aria-label="Hide controls">×</button>
+      </div>
+
+      <label>
+        Eyebrow
+        <input id="eyebrowInput" value="FUNNIEST CLIP OF THE MONTH">
+      </label>
+      <label>
+        Main title
+        <input id="titleInput" value="JUNE'S WINNER ANNOUNCEMENT">
+      </label>
+      <label>
+        Category
+        <input id="subtitleInput" value="">
+      </label>
+      <label>
+        Segment label
+        <input id="segmentInput" value="WINNER">
+      </label>
+      <label>
+        Display name
+        <input id="displayNameInput" value="RenPT23 (7om)">
+      </label>
+      <label>
+        Discord ID
+        <input id="usernameInput" value="@9om_2">
+      </label>
+
+      <div class="file-grid">
+        <label class="file-button">
+          <span>Choose clip</span>
+          <input type="file" id="clipInput" accept="video/*">
+        </label>
+        <label class="file-button secondary">
+          <span>Choose avatar</span>
+          <input type="file" id="avatarInput" accept="image/*">
+        </label>
+      </div>
+
+      <label>
+        Clip fit
+        <select id="fitInput">
+          <option value="cover">Fill screen</option>
+          <option value="contain">Show full clip</option>
+        </select>
+      </label>
+
+      <details class="style-controls" open>
+        <summary>Typography &amp; logo</summary>
+        <div class="style-heading">
+          <span>Element</span>
+          <span>Size</span>
+          <span>Color</span>
+        </div>
+        <div class="style-row">
+          <span>Logo</span>
+          <input type="range" id="logoSize" min="6" max="28" step="0.1" value="24.6" aria-label="Logo size">
+          <span class="no-color">-</span>
+        </div>
+        <div class="style-row">
+          <span>Eyebrow</span>
+          <input type="range" id="eyebrowSize" min="0.6" max="2.2" step="0.01" value="1.15" aria-label="Eyebrow size">
+          <input type="color" id="eyebrowColor" value="#44d62c" aria-label="Eyebrow color">
+        </div>
+        <div class="style-row">
+          <span>Main title</span>
+          <input type="range" id="titleSize" min="1.4" max="4.5" step="0.01" value="2.65" aria-label="Main title size">
+          <input type="color" id="titleColor" value="#ffffff" aria-label="Main title color">
+        </div>
+        <div class="style-row">
+          <span>Category</span>
+          <input type="range" id="subtitleSize" min="0.6" max="2.2" step="0.01" value="1.05" aria-label="Category size">
+          <input type="color" id="subtitleColor" value="#d8dcde" aria-label="Category color">
+        </div>
+        <div class="style-row">
+          <span>Segment</span>
+          <input type="range" id="segmentSize" min="0.4" max="1.6" step="0.01" value="0.62" aria-label="Segment size">
+          <input type="color" id="segmentColor" value="#44d62c" aria-label="Segment color">
+        </div>
+        <div class="style-row">
+          <span>Display name</span>
+          <input type="range" id="displayNameSize" min="0.6" max="2" step="0.01" value="1.05" aria-label="Display name size">
+          <input type="color" id="displayNameColor" value="#ffffff" aria-label="Display name color">
+        </div>
+        <div class="style-row">
+          <span>Discord ID</span>
+          <input type="range" id="discordSize" min="0.5" max="1.6" step="0.01" value="0.78" aria-label="Discord ID size">
+          <input type="color" id="discordColor" value="#aeb5b8" aria-label="Discord ID color">
+        </div>
+        <button type="button" class="reset-style" id="resetStyle">Reset typography</button>
+      </details>
+
+      <div class="calibration">
+        <div class="calibration-heading">
+          <span>Clip calibration</span>
+          <button type="button" id="resetCalibration">Reset</button>
+        </div>
+        <label class="toggle-row">
+          <input type="checkbox" id="dragToggle">
+          <span>Drag clip directly on canvas</span>
+        </label>
+        <label>
+          Horizontal position
+          <input type="range" id="clipX" min="25" max="40" step="0.01" value="32.32">
+        </label>
+        <label>
+          Vertical position
+          <input type="range" id="clipY" min="30" max="48" step="0.01" value="37.9">
+        </label>
+        <label>
+          Width
+          <input type="range" id="clipWidth" min="25" max="42" step="0.01" value="33.17">
+        </label>
+        <label>
+          Height
+          <input type="range" id="clipHeight" min="25" max="45" step="0.01" value="31.95">
+        </label>
+      </div>
+
+      <div class="actions">
+        <button id="playButton">Play preview</button>
+        <button class="secondary-action" id="fullscreenButton">Fullscreen</button>
+        <button class="export-action" id="exportButton">Export video</button>
+      </div>
+      <p class="export-status" id="exportStatus" role="status"></p>
+      <p class="hint">The control panel is outside the 16:9 output frame.</p>
+    </aside>
+  </main>
+
+  <button class="show-controls" id="showPanel">Show controls</button>
+  <script src="app.js"></script>
+</body>
+</html>
