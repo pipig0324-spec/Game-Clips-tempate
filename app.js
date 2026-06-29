@@ -330,11 +330,11 @@ function renderExportFrame(context, canvas) {
 
 function chooseRecordingType() {
   const candidates = [
+    "video/webm;codecs=vp8,opus",
+    "video/webm;codecs=vp9,opus",
+    "video/webm",
     "video/mp4;codecs=avc1.42E01E,mp4a.40.2",
     "video/mp4",
-    "video/webm;codecs=vp9,opus",
-    "video/webm;codecs=vp8,opus",
-    "video/webm",
   ];
   return candidates.find((type) => MediaRecorder.isTypeSupported(type)) || "";
 }
@@ -351,7 +351,7 @@ document.getElementById("exportButton").addEventListener("click", async () => {
 
   exportButton.disabled = true;
   exportButton.textContent = "Exporting...";
-  exportStatus.textContent = "Preparing 1920 x 1080 video...";
+  exportStatus.textContent = "Preparing 1920 x 1080 WebM video...";
 
   const canvas = document.createElement("canvas");
   canvas.width = 1920;
@@ -419,7 +419,7 @@ document.getElementById("exportButton").addEventListener("click", async () => {
     link.download = `game-clips-${document.getElementById("segmentInput").value.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "export"}.${extension}`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 30000);
-    exportStatus.textContent = `Export complete: ${extension.toUpperCase()}`;
+    exportStatus.textContent = `Export complete: ${extension.toUpperCase()} with video and audio`;
   } catch (error) {
     console.error(error);
     if (recorder.state !== "inactive") recorder.stop();
@@ -428,6 +428,6 @@ document.getElementById("exportButton").addEventListener("click", async () => {
   } finally {
     video.loop = previousLoop;
     exportButton.disabled = false;
-    exportButton.textContent = "Export video";
+    exportButton.textContent = "Export WebM";
   }
 });
